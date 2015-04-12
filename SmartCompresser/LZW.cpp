@@ -63,10 +63,10 @@ inline std::vector<char> operator + (std::vector<char> vc, char c)
 }
 
 /// Type used to store and retrieve codes.
-using CodeType = std::uint16_t;
+using KeyType = std::uint16_t;
 
 /// Dictionary Maximum Size (when reached, the dictionary will be reset)
-static CodeType dms = std::numeric_limits<CodeType>::max();
+static KeyType dictMaxSize = std::numeric_limits<KeyType>::max();
 
 
 
@@ -79,180 +79,142 @@ class LZWCompressor
 	};
 
 	
-	class EncoderDictionary {
+	class Dictionary
+	{
+		struct Node
+		{
 
-		///
-		/// @brief Binary search tree node.
-		///
-		struct Node {
+			explicit Node(char c) : first(dictMaxSize), value(c), leftChild(dictMaxSize), rightChild(dictMaxSize) {}
+			KeyType    leftChild;
+			KeyType    rightChild;
 
-			///
-			/// @brief Default constructor.
-			/// @param c    byte that the Node will contain
-			///
-			explicit Node(char c) : first(dms), c(c), left(dms), right(dms)
-			{
-			}
+			KeyType    first;// first child (like linked lists)
+			char       value;
 
-			CodeType    first;  ///< Code of first child string.
-			char        c;      ///< Byte.
-			CodeType    left;   ///< Code of child node with byte < `c`.
-			CodeType    right;  ///< Code of child node with byte > `c`.
 		};
 
 	public:
-
-		///
-		/// @brief Default constructor.
-		/// @details It builds the `initials` cheat sheet.
-		///
-		EncoderDictionary()
+		Dictionary()
 		{
-			const int minc = std::numeric_limits<char>::min();
-			const int maxc = std::numeric_limits<char>::max();
-			CodeType k{ 0 };
+			const int minCharValue = std::numeric_limits<char>::min();
+			const int maxCharValue = std::numeric_limits<char>::max();
+			KeyType k = 0;
 
-			for (int c = minc; c <= maxc; ++c)
+			for (int c = minCharValue; c <= maxCharValue; ++c)
 				initials[static_cast<unsigned char> (c)] = k++;
 
-			bTreeNodes.reserve(dms);
+			bTreeNodes.reserve(dictMaxSize);
 			resetValues();
 		}
 
 		void resetValues()
 		{
+			const int minCharValue = std::numeric_limits<char>::min();
+			const int maxCharValue = std::numeric_limits<char>::max();
+			
 			bTreeNodes.clear();
-
-			const int minc = std::numeric_limits<char>::min();
-			const int maxc = std::numeric_limits<char>::max();
-
-			for (int c = minc; c <= maxc; ++c)
+			for (int c = minCharValue; c <= maxCharValue; ++c)
 				bTreeNodes.push_back(Node(static_cast<char>(c)));
 		}
 
-		///
-		/// @brief Searches for a pair (`i`, `c`) and inserts the pair if it wasn't found.
-		/// @param i                code to search for
-		/// @param c                attached byte to search for
-		/// @returns The index of the pair, if it was found.
-		/// @retval globals::dms    if the pair wasn't found
-		///
-		CodeType searchInsert(CodeType i, char c)
+		KeyType searchInsert(KeyType i, char data)
 		{
-			// dictionary's maximum size was reached
-			if (bTreeNodes.size() == dms)
+			if (bTreeNodes.size() == dictMaxSize)
 				resetValues();
 
-			if (i == dms)
-				return searchInitials(c);
+			if (i == dictMaxSize)
+				return searchInitials(data);
 
-			const CodeType vn_size = bTreeNodes.size();
-			CodeType ci{ bTreeNodes[i].first }; // Current Index
+			const KeyType treeSize = bTreeNodes.size();
+			KeyType currentIndex = bTreeNodes[i].first;
 
-			if (ci != dms)
+			if (currentIndex != dictMaxSize)
 			{
-				while (true)
-				if (c < bTreeNodes[ci].c)
+				bool needsAdded = false;
+				while (!needsAdded)
 				{
-					if (bTreeNodes[ci].left == dms)
-					{
-						bTreeNodes[ci].left = vn_size;
-						break;
-					}
+					if (data < bTreeNodes[currentIndex].value)
+						if (bTreeNodes[currentIndex].leftChild == dictMaxSize)
+						{
+							bTreeNodes[currentIndex].leftChild = treeSize;
+							needsAdded = true;
+						}
+						else
+							currentIndex = bTreeNodes[currentIndex].leftChild;
 					else
-						ci = bTreeNodes[ci].left;
-				}
-				else
-				if (c > bTreeNodes[ci].c)
-				{
-					if (bTreeNodes[ci].right == dms)
-					{
-						bTreeNodes[ci].right = vn_size;
-						break;
-					}
+					if (data > bTreeNodes[currentIndex].value)
+						if (bTreeNodes[currentIndex].rightChild == dictMaxSize)
+						{
+							bTreeNodes[currentIndex].rightChild = treeSize;
+							needsAdded = true;
+						}
+						else
+							currentIndex = bTreeNodes[currentIndex].rightChild;
 					else
-						ci = bTreeNodes[ci].right;
+						return currentIndex;
 				}
-				else // c == vn[ci].c
-					return ci;
 			}
 			else
-				bTreeNodes[i].first = vn_size;
+				bTreeNodes[i].first = treeSize;
 
-			bTreeNodes.push_back(Node(c));
-			return dms;
+			bTreeNodes.push_back(Node(data));
+			return dictMaxSize;
 		}
 
-		///
-		/// @brief Fakes a search for byte `c` in the one-byte area of the dictionary.
-		/// @param c    byte to search for
-		/// @returns The code associated to the searched byte.
-		///
-		CodeType searchInitials(char c) const
+		KeyType searchInitials(char c) const
 		{
 			return initials[static_cast<unsigned char> (c)];
 		}
 
 	private:
 
-		/// Vector of nodes on top of which the binary search tree is implemented.
 		std::vector<Node> bTreeNodes;
-
-		/// Cheat sheet for mapping one-byte strings to their codes.
-		std::array<CodeType, 1u << CHAR_BIT> initials;
+		std::array<KeyType, 1u << CHAR_BIT> initials;
 	};
 
 	void compress(std::istream &is, std::ostream &os)
 	{
-		EncoderDictionary ed;
-		CodeType i{ dms }; // Index
-		char c;
+		Dictionary dict;
+		KeyType index = dictMaxSize;
+		char data;
 
-		while (is.get(c))
+		while (is.get(data))
 		{
-			const CodeType temp{ i };
+			const KeyType temp = index;
 
-			if ((i = ed.searchInsert(temp, c)) == dms)
+			if ((index = dict.searchInsert(temp, data)) == dictMaxSize)//string doesn't exist in the dictionary
 			{	
-				os.write(reinterpret_cast<const char *> (&temp), sizeof (CodeType));
-				i = ed.searchInitials(c);
+				os.write(reinterpret_cast<const char *> (&temp), sizeof (KeyType));
+				index = dict.searchInitials(data);
 			}
 		}
 
-		if (i != dms)
-			os.write(reinterpret_cast<const char *> (&i), sizeof (CodeType));
+		if (index != dictMaxSize)
+			os.write(reinterpret_cast<const char *> (&index), sizeof (KeyType));
 	}
 
-	///
-	/// @brief Decompresses the contents of `is` and writes the result to `os`.
-	/// @param [in] is      input stream
-	/// @param [out] os     output stream
-	///
 	void decompress(std::istream &is, std::ostream &os)
 	{
-		std::vector<std::pair<CodeType, char>> dictionary;
+		std::vector<std::pair<KeyType, char>> dictionary;
 
-		// "named" lambda function, used to reset the dictionary to its initial contents
-		const auto reset_dictionary = [&dictionary] {
+		const auto resetDictionary = [&dictionary] {
 			dictionary.clear();
-			dictionary.reserve(dms);
+			dictionary.reserve(dictMaxSize);
 
 			const int minc = std::numeric_limits<char>::min();
 			const int maxc = std::numeric_limits<char>::max();
 
 			for (int c = minc; c <= maxc; ++c)
-				dictionary.push_back({ dms, static_cast<char> (c) });
+				dictionary.push_back({ dictMaxSize, static_cast<char> (c) });
 		};
 
-		const auto rebuild_string = [&dictionary](CodeType k) -> const std::vector<char> * {
+		const auto rebuildString = [&dictionary](KeyType k) -> const std::vector<char> * {
 			static std::vector<char> s; // String
 
 			s.clear();
+			s.reserve(dictMaxSize);
 
-			// the length of a string cannot exceed the dictionary's number of entries
-			s.reserve(dms);
-
-			while (k != dms)
+			while (k != dictMaxSize)
 			{
 				s.push_back(dictionary[k].second);
 				k = dictionary[k].first;
@@ -262,16 +224,15 @@ class LZWCompressor
 			return &s;
 		};
 
-		reset_dictionary();
+		resetDictionary();
 
-		CodeType i{ dms }; // Index
-		CodeType k; // Key
+		KeyType i = dictMaxSize; // Index
+		KeyType k; // Key
 
-		while (is.read(reinterpret_cast<char *> (&k), sizeof (CodeType)))
+		while (is.read(reinterpret_cast<char *> (&k), sizeof (KeyType)))
 		{
-			// dictionary's maximum size was reached
-			if (dictionary.size() == dms)
-				reset_dictionary();
+			if (dictionary.size() == dictMaxSize)
+				resetDictionary();
 
 			if (k > dictionary.size())
 				throw std::runtime_error("invalid compressed code");
@@ -280,14 +241,14 @@ class LZWCompressor
 
 			if (k == dictionary.size())
 			{
-				dictionary.push_back({ i, rebuild_string(i)->front() });
-				s = rebuild_string(k);
+				dictionary.push_back({ i, rebuildString(i)->front() });
+				s = rebuildString(k);
 			}
 			else
 			{
-				s = rebuild_string(k);
+				s = rebuildString(k);
 
-				if (i != dms)
+				if (i != dictMaxSize)
 					dictionary.push_back({ i, s->front() });
 			}
 
