@@ -1,59 +1,5 @@
 #include "stdafx.h"
-///
-/// @file
-/// @author Julius Pettersson
-/// @copyright MIT/Expat License.
-/// @brief LZW file compressor
-/// @version 1
-///
-/// This is the C++11 implementation of a Lempel-Ziv-Welch single-file command-line compressor.
-/// It uses the simpler fixed-width code compression method.
-/// It was written with Doxygen comments.
-///
-/// @see http://en.wikipedia.org/wiki/Lempel%E2%80%93Ziv%E2%80%93Welch
-/// @see http://marknelson.us/2011/11/08/lzw-revisited/
-/// @see http://www.cs.duke.edu/csed/curious/compression/lzw.html
-/// @see http://warp.povusers.org/EfficientLZW/index.html
-/// @see http://en.cppreference.com/
-/// @see http://www.doxygen.org/
-///
 
-#include <algorithm>
-#include <array>
-#include <climits>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <exception>
-#include <fstream>
-#include <ios>
-#include <iostream>
-#include <istream>
-#include <limits>
-#include <memory>
-#include <ostream>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
-#include <cstdint>
-#include <cstdlib>
-#include <exception>
-#include <fstream>
-#include <ios>
-#include <iostream>
-#include <istream>
-#include <limits>
-#include <map>
-#include <cstddef>
-#include <functional>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <ostream>
-#include <stdexcept>
-#include <string>
-#include <vector>
 
 
 inline std::vector<char> operator + (std::vector<char> vc, char c)
