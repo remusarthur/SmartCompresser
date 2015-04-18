@@ -5,6 +5,7 @@
 #include "LZW.cpp"
 #include "RLE.cpp"
 #include "BitFileManager.cpp"
+#include "Audio.cpp"
 #include <ctime>
 
 RLE rle;
@@ -14,18 +15,24 @@ int _tmain(int argc, _TCHAR* argv[])
 	time_t ts;
 	time(&ts);
 	std::cout << "Starting compression" << std::endl;
-	LZWCompressor::compressFile("untitled.bmp", "output.lzw");
-	rle.compressFile("untitled.bmp", "output.rle");
+	//LZWCompressor::compressFile("untitled.bmp", "output.lzw");
+	//rle.compressFile("untitled.bmp", "output.rle");
 	//rle.compressFile("new1.txt", "out.rle");
+	AudioCompresser audioComp;
+	audioComp.compressFile("Louder16BitSigned.raw", "out.raw");
+
 	std::cout << "Compression finished in ";
 	time_t te; 
 	time(&te);
 	std::cout << te - ts << std::endl;
 
 	std::cout << "Starting decompression" << std::endl;
-	LZWCompressor::decompressFile("output.lzw", "untitledDecomp.bmp");
-	rle.decompressFile("output.rle", "untitledDecomp2.bmp");
+	//LZWCompressor::decompressFile("output.lzw", "untitledDecomp.bmp");
+	//rle.decompressFile("output.rle", "untitledDecomp2.bmp");
 	//rle.decompressFile("out.rle", "new1Dec.txt");
+	//audioComp.decompressFile("Louder16BitSignedALAW.raw", "Louder16BitSignedDecod.raw");
+
+	audioComp.decompressFile("out.raw", "Louder16BitSignedDecod.raw");
 	std::cout << "Decompression finished in";
 	time(&ts);
 	std::cout << ts - te << std::endl;
@@ -53,8 +60,5 @@ int _tmain(int argc, _TCHAR* argv[])
 	bitManager.read(a);
 	bitManager.read(a);
 	bitManager.read(a);*/
-	
-	
-	return 0;
+		return 0;
 }
-

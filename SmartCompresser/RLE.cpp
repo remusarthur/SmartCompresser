@@ -41,9 +41,11 @@ public:
 			else
 				frequency++;
 
-			/*if (abs(lastChar - currentChar) < 20)
+			/*if (abs(lastChar - currentChar) <= 1 && frequency < 16)
 			{
-				//lastChar = (frequency * lastChar + currentChar) / (frequency + 1);
+				double v = (frequency);
+				v = (v*lastChar + currentChar) / (frequency + 1);
+				lastChar = v;// (frequency * lastChar + currentChar) / (frequency + 1);
 				frequency++;
 			}
 			else

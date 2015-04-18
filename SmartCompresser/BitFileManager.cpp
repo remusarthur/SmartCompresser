@@ -124,13 +124,13 @@ private:
 				std::streamsize bytes = is.gcount();
 				std::bitset<MAX_BUFFER_SIZE> revBuffer;
 
-				bufferSize = bytes << 3;
+				bufferSize = static_cast<int>(bytes << 3);
 				for (int j = 0; j < bufferSize; j++)
 					revBuffer[j] = ((bfr[(j >> 3)] >> ((7 - j) & 7)) & 1);
 
 				buffer.reset();
 				for (int j = 0; j < bufferSize; j++)
-					buffer[j] = revBuffer[(bytes << 3) - j - 1];
+					buffer[j] = revBuffer[bufferSize - j - 1];
 
 
 				if (bytes == 0)
@@ -152,6 +152,8 @@ private:
 
 			return EXIT_SUCCESS;
 		}
+
+		return EXIT_SUCCESS;
 	}
 
 
