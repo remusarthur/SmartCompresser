@@ -83,10 +83,8 @@ public:
 			return EXIT_FAILURE;
 
 		int8_t data;
-		char chrData;
-		while (input_file.read(&chrData, sizeof(char)))
+		while (input_file.read(reinterpret_cast<char*>(&data), sizeof(int8_t)))
 		{
-			data = chrData;
 			int16_t result = decode(data);
 			output_file.write(reinterpret_cast<char*>(&result), sizeof(int16_t));
 		}

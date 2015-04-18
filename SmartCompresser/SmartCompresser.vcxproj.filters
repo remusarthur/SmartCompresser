@@ -44,7 +44,7 @@
     <ClCompile Include="BitFileManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Audio.cpp">
+    <ClCompile Include="MuLaw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

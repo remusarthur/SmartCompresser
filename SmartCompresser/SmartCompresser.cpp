@@ -5,7 +5,7 @@
 #include "LZW.cpp"
 #include "RLE.cpp"
 #include "BitFileManager.cpp"
-#include "Audio.cpp"
+#include "MuLaw.cpp"
 #include <ctime>
 
 RLE rle;

@@ -84,7 +84,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Audio.cpp" />
+    <ClCompile Include="MuLaw.cpp" />
     <ClCompile Include="BitFileManager.cpp" />
     <ClCompile Include="LZW.cpp" />
     <ClCompile Include="RLE.cpp" />
