@@ -5,13 +5,13 @@
 
 class AudioCompresser
 {
-	typedef int16_t InitialType;
-	typedef int8_t CompressType;
+	typedef int16_t EncodedType;
+	typedef int8_t KeyType;
 
 	const uint16_t MMAX = 0x1FFF;
 	const uint16_t BIAS = 0x84;//132
 
-	CompressType encode(InitialType data)
+	KeyType encode(EncodedType data)
 	{
 		uint16_t bitMask = 0x1000;
 		uint8_t sign = 0;
@@ -38,10 +38,10 @@ class AudioCompresser
 	}
 
 
-	InitialType decode(CompressType data)
+	EncodedType decode(KeyType data)
 	{
 		uint8_t sign = 0, pos = 0;
-		InitialType result = 0;
+		EncodedType result = 0;
 
 		data = ~data;
 		if (data & 0x80)
@@ -67,11 +67,11 @@ public:
 		if (!output_file.is_open() || !input_file.is_open())
 			return EXIT_FAILURE;
 
-		InitialType data;
+		EncodedType data;
 		while (input_file.read(reinterpret_cast<char *>(&data), sizeof(data)))
 		{
-			CompressType result = encode(data);
-			output_file.write(reinterpret_cast<const char *> (&result), sizeof(CompressType));
+			KeyType result = encode(data);
+			output_file.write(reinterpret_cast<const char *> (&result), sizeof(KeyType));
 		}
 
 		return EXIT_SUCCESS;
@@ -85,11 +85,11 @@ public:
 		if (!output_file.is_open() || !input_file.is_open())
 			return EXIT_FAILURE;
 
-		CompressType data;
-		while (input_file.read(reinterpret_cast<char*>(&data), sizeof(CompressType)))
+		KeyType data;
+		while (input_file.read(reinterpret_cast<char*>(&data), sizeof(KeyType)))
 		{
-			InitialType result = decode(data);
-			output_file.write(reinterpret_cast<char*>(&result), sizeof(InitialType));
+			EncodedType result = decode(data);
+			output_file.write(reinterpret_cast<char*>(&result), sizeof(EncodedType));
 		}
 
 		return EXIT_SUCCESS;
