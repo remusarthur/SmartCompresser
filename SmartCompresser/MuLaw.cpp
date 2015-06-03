@@ -1,13 +1,12 @@
 #pragma once
 
 #include "stdafx.h"
+#include "BaseCompression.h"
 
-
-class AudioCompresser
+class AudioCompresser: public BaseCompression
 {
 	typedef int16_t EncodedType;
 	typedef int8_t KeyType;
-
 	const uint16_t MMAX = 0x1FFF;
 	const uint16_t BIAS = 0x84;//132
 
@@ -57,6 +56,7 @@ class AudioCompresser
 		return (sign == 0) ? (result) : (-(result));
 	}
 
+
 public:
 
 	int compressFile(const std::string& inputPath, const std::string& outputPath)
@@ -66,6 +66,8 @@ public:
 
 		if (!output_file.is_open() || !input_file.is_open())
 			return EXIT_FAILURE;
+
+		addHeader(output_file);
 
 		EncodedType data;
 		while (input_file.read(reinterpret_cast<char *>(&data), sizeof(data)))
@@ -85,6 +87,9 @@ public:
 		if (!output_file.is_open() || !input_file.is_open())
 			return EXIT_FAILURE;
 
+		if (!checkHeader(input_file))
+			return EXIT_FAILURE;
+
 		KeyType data;
 		while (input_file.read(reinterpret_cast<char*>(&data), sizeof(KeyType)))
 		{
@@ -93,5 +98,10 @@ public:
 		}
 
 		return EXIT_SUCCESS;
+	}
+
+	AudioCompresser(char key) :BaseCompression(key)
+	{
+		
 	}
 };

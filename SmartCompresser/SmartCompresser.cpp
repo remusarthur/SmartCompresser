@@ -2,63 +2,193 @@
 //
 
 #include "stdafx.h"
+#include "BitFileManager.cpp"
 #include "LZW.cpp"
 #include "RLE.cpp"
-#include "BitFileManager.cpp"
 #include "MuLaw.cpp"
 #include <ctime>
+#include <windows.h>
+#include <string>
+#include "Huffman.cpp"
 
-RLE rle;
+class SmartCompresser
+{
+	size_t MIN_SIZE = 1024 * 16;
+	std::string tempFileName = "file.tmp";
+	std::string compressedtempFileName = "fileCompressed.tmp";
+
+	
+	int smartCompress(const std::string& input, const std::string& output)
+	{
+		std::ifstream is(input, std::ios_base::binary);
+		std::ofstream os(tempFileName, std::ios_base::binary);
+
+		if (!is.is_open() || !os.is_open())
+			return EXIT_FAILURE;
+		std::streampos fsize = 0;
+
+		fsize = is.tellg();
+		is.seekg(0, std::ios::end);
+		fsize = is.tellg() - fsize;
+
+		if (fsize < MIN_SIZE)
+		{
+			is.close();
+			return compressFile(input, output, LzwMode);
+		}
+
+		is.seekg(MIN_SIZE / 2, std::ios::beg);
+		size_t nbytes = 0;
+		char data;
+		while (is.get(data) && nbytes < MIN_SIZE / 2)
+		{
+			os << data;
+			nbytes++;
+		}
+		os.close();
+
+		size_t minSize = nbytes;
+		Mode mode;
+
+		auto isMin = [&]()
+		{
+			std::ifstream is(compressedtempFileName, std::ios_base::binary);
+			std::streampos fsize = 0;
+
+			fsize = is.tellg();
+			is.seekg(0, std::ios::end);
+			fsize = is.tellg() - fsize;
+
+			if (fsize < minSize)
+			{
+				minSize = fsize;
+				return true;
+			}
+
+			return false;
+		};
+
+		compressFile(tempFileName, compressedtempFileName, HuffmanMode);
+		if (isMin())
+			mode = HuffmanMode;
+		compressFile(tempFileName, compressedtempFileName, LzwMode);
+		if (isMin())
+			mode = LzwMode;
+		compressFile(tempFileName, compressedtempFileName, RleMode);
+		if (isMin())
+			mode = RleMode;
+
+		return compressFile(input, output, mode);
+	}
+
+public:
+	
+	enum Mode
+	{
+		RleMode,
+		LzwMode,
+		MulawMode,
+		HuffmanMode,
+		SmartMode
+	};
+	int compressFile(const std::string& input, const std::string& output, Mode mode)
+	{
+		RLE rle(static_cast<char>(1));
+		AudioCompresser audioComp(static_cast<char>(2));
+		Huffman huffman(static_cast<char>(3));
+		LZWCompressor lzw(static_cast<char>(4));
+
+		if (mode == RleMode)
+			return rle.compressFile(input, output);
+		if (mode == LzwMode)
+			return lzw.compressFile(input, output);
+		if (mode == MulawMode)
+			return audioComp.compressFile(input, output);
+		if (mode == HuffmanMode)
+			return huffman.compressFile(input, output);
+		if (mode == SmartMode)
+			return smartCompress(input, output);
+	}
+
+	int decompressFile(const std::string& input, const std::string& output)
+	{
+		RLE rle(static_cast<char>(1));
+		AudioCompresser audioComp(static_cast<char>(2));
+		Huffman huffman(static_cast<char>(3));
+		LZWCompressor lzw(static_cast<char>(4));
+		Mode mode;
+
+		std::ifstream is(input, std::ios_base::binary);
+		std::ofstream os(tempFileName, std::ios_base::binary);
+
+		if (!is.is_open() || !os.is_open())
+			return EXIT_FAILURE;
+		
+		char data;
+		is.get(data);
+		is.close();
+		if (data == static_cast<char>(1))
+			mode = RleMode;
+		if (data == static_cast<char>(2))
+			mode = MulawMode;
+		if (data == static_cast<char>(3))
+			mode = HuffmanMode;
+		if (data == static_cast<char>(4))
+			mode = LzwMode;
+
+		if (mode == RleMode)
+			return rle.decompressFile(input, output);
+		if (mode == LzwMode)
+			return lzw.decompressFile(input, output);
+		if (mode == MulawMode)
+			return audioComp.decompressFile(input, output);
+		if (mode == HuffmanMode)
+			return huffman.decompressFile(input, output);
+	}
+};
+
+std::string ws2s(const std::wstring& wideString)
+{
+	return std::string(wideString.begin(), wideString.end());
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
 	time_t ts;
 	time(&ts);
-	std::cout << "Starting compression" << std::endl;
-	//LZWCompressor::compressFile("untitled.bmp", "output.lzw");
-	//rle.compressFile("untitled.bmp", "output.rle");
-	//rle.compressFile("new1.txt", "out.rle");
-	AudioCompresser audioComp;
-	audioComp.compressFile("Louder16BitSigned.raw", "out.raw");
+	if (argc != 5) //input output mode
+		return ERROR_BAD_ARGUMENTS;
 
+	std::string input = ws2s(argv[1]);
+	std::string output = ws2s(argv[2]);
+	std::string mode = ws2s(argv[3]);
+	std::string cmp = ws2s(argv[4]);
+
+	
+	std::cout << "Starting compression" << std::endl;
+	SmartCompresser smartCompresser;
+
+	if (cmp == "DECOMPRESS")
+	{
+		smartCompresser.decompressFile(input, output);
+	}
+	else
+	{
+		if (mode == "RLE")
+			smartCompresser.compressFile(input, output, SmartCompresser::RleMode);
+		else if (mode == "MULAW")
+			smartCompresser.compressFile(input, output, SmartCompresser::MulawMode);
+		else if (mode == "LZW")
+			smartCompresser.compressFile(input, output, SmartCompresser::LzwMode);
+		else if (mode == "HUFFMAN")
+			smartCompresser.compressFile(input, output, SmartCompresser::HuffmanMode);
+		else
+			smartCompresser.compressFile(input, output, SmartCompresser::SmartMode);
+	}
 	std::cout << "Compression finished in ";
 	time_t te; 
 	time(&te);
 	std::cout << te - ts << std::endl;
 
-	std::cout << "Starting decompression" << std::endl;
-	//LZWCompressor::decompressFile("output.lzw", "untitledDecomp.bmp");
-	//rle.decompressFile("output.rle", "untitledDecomp2.bmp");
-	//rle.decompressFile("out.rle", "new1Dec.txt");
-	//audioComp.decompressFile("Louder16BitSignedALAW.raw", "Louder16BitSignedDecod.raw");
-
-	audioComp.decompressFile("out.raw", "Louder16BitSignedDecod.raw");
-	std::cout << "Decompression finished in";
-	time(&ts);
-	std::cout << ts - te << std::endl;
-
-	/*BitFileManager bitManager;
-	bitManager.mode = BitFileManager::Mode::Write;
-	bitManager.os = std::ofstream("out.rle");
-	char ch;
-	bool b;
-	bitManager.write(unsigned char('a'));
-	bitManager.write(unsigned char('z'));
-	b = true;
-	bitManager.write(b);
-	bitManager.write(b);
-	b = false;
-	bitManager.write(b);
-	b = true;
-	bitManager.write(b);
-
-	//BitFileManager bitManager;
-	bitManager.mode = BitFileManager::Mode::Read;
-	bitManager.is = std::ifstream("out.rle", std::ifstream::eofbit);
-
-	unsigned char a;
-	bitManager.read(a);
-	bitManager.read(a);
-	bitManager.read(a);*/
-		return 0;
+	return 0;
 }

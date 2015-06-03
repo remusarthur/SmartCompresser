@@ -1,5 +1,5 @@
 #include "stdafx.h"
-
+#include "BaseCompression.h"
 
 
 inline std::vector<char> operator + (std::vector<char> vc, char c)
@@ -16,9 +16,8 @@ static KeyType dictMaxSize = std::numeric_limits<KeyType>::max();
 
 
 
-class LZWCompressor
+class LZWCompressor: public BaseCompression
 {
-
 	enum Mode{
 		Compress,
 		Decompress
@@ -120,6 +119,7 @@ class LZWCompressor
 
 	void compress(std::istream &is, std::ostream &os)
 	{
+		addHeader(os);
 		Dictionary dict;
 		KeyType index = dictMaxSize;
 		char data;
@@ -141,6 +141,9 @@ class LZWCompressor
 
 	void decompress(std::istream &is, std::ostream &os)
 	{
+		if (!checkHeader(is))
+			return ;
+
 		std::vector<std::pair<KeyType, char>> dictionary;
 
 		const auto resetDictionary = [&dictionary] {
@@ -241,15 +244,16 @@ class LZWCompressor
 
 public:
 	
-	static int compressFile(const std::string& inputPath, const std::string& outputPath)
+	int compressFile(const std::string& inputPath, const std::string& outputPath)
 	{
-		LZWCompressor obj;
-		return obj.doFileAction(Mode::Compress, inputPath, outputPath);
+		return doFileAction(Mode::Compress, inputPath, outputPath);
 	}
 
-	static int decompressFile(const std::string& inputPath, const std::string& outputPath)
+	int decompressFile(const std::string& inputPath, const std::string& outputPath)
 	{
-		LZWCompressor obj;
-		return obj.doFileAction(Mode::Decompress, inputPath, outputPath);
+		return doFileAction(Mode::Decompress, inputPath, outputPath);
 	}
+
+	LZWCompressor(char key) :BaseCompression(key)
+	{};
 };

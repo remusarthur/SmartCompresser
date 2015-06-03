@@ -14,6 +14,10 @@ public:
 		Write
 	};
 
+	void write(char value)
+	{
+		write(static_cast<unsigned char>(value));
+	}
 
 	void write(unsigned char value)
 	{
@@ -101,6 +105,21 @@ public:
 			os.close();
 	}
 
+	std::ifstream& getIStream()
+	{
+		if (mode == Mode::Read)
+			return is;
+
+		return std::ifstream();
+	}
+
+	std::ofstream& getOStream()
+	{
+		if (mode == Mode::Write)
+			return os;
+
+		return std::ofstream();
+	}
 	
 private:
 	int i, j;
