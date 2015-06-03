@@ -11,8 +11,7 @@
 class Huffman: public BaseCompression
 {
 	static const int UniqueSymbols = 1 << CHAR_BIT;
-	const char privateKey = static_cast<char>(2);
-
+	
 	typedef std::vector<bool> HuffmanCode;
 	typedef std::map<char, HuffmanCode> HuffCodeMapping;
 	typedef std::map<HuffmanCode, char> HuffDecodeMapping;
