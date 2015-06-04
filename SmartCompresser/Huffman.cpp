@@ -186,6 +186,6 @@ public:
 		return EXIT_SUCCESS;
 	}
 
-	Huffman(char key): BaseCompression(key)
+	Huffman(BaseCompression::PrivateKeyType key) : BaseCompression(key)
 	{};
 };

@@ -17,6 +17,10 @@ class SmartCompresser
 	std::string tempFileName = "file.tmp";
 	std::string compressedtempFileName = "fileCompressed.tmp";
 
+	const char HuffmanKey = static_cast<char>(1);
+	const char RleKey = static_cast<char>(2);
+	const char LzwKey = static_cast<char>(3);
+	const char MuLawKey = static_cast<char>(4);
 	
 	int smartCompress(const std::string& input, const std::string& output)
 	{
@@ -34,7 +38,7 @@ class SmartCompresser
 		if (fsize < MIN_SIZE)
 		{
 			is.close();
-			return compressFile(input, output, LzwMode);
+			return compressFile(input, output, LempelZivWelch);
 		}
 
 		is.seekg(MIN_SIZE / 2, std::ios::beg);
@@ -68,15 +72,15 @@ class SmartCompresser
 			return false;
 		};
 
-		compressFile(tempFileName, compressedtempFileName, HuffmanMode);
+		compressFile(tempFileName, compressedtempFileName, HuffmanCoding);
 		if (isMin())
-			mode = HuffmanMode;
-		compressFile(tempFileName, compressedtempFileName, LzwMode);
+			mode = HuffmanCoding;
+		compressFile(tempFileName, compressedtempFileName, LempelZivWelch);
 		if (isMin())
-			mode = LzwMode;
-		compressFile(tempFileName, compressedtempFileName, RleMode);
+			mode = LempelZivWelch;
+		compressFile(tempFileName, compressedtempFileName, RunLengthEncoding);
 		if (isMin())
-			mode = RleMode;
+			mode = RunLengthEncoding;
 
 		return compressFile(input, output, mode);
 	}
@@ -85,37 +89,40 @@ public:
 	
 	enum Mode
 	{
-		RleMode,
-		LzwMode,
-		MulawMode,
-		HuffmanMode,
-		SmartMode
+		RunLengthEncoding,
+		LempelZivWelch,
+		Mulaw,
+		HuffmanCoding,
+		Smart
 	};
 	int compressFile(const std::string& input, const std::string& output, Mode mode)
 	{
-		RLE rle(static_cast<char>(1));
-		AudioCompresser audioComp(static_cast<char>(2));
-		Huffman huffman(static_cast<char>(3));
-		LZWCompressor lzw(static_cast<char>(4));
+		RLE rle(RleKey);
+		AudioCompresser audioComp(MuLawKey);
+		Huffman huffman(HuffmanKey);
+		LZWCompressor lzw(LzwKey);
 
-		if (mode == RleMode)
-			return rle.compressFile(input, output);
-		if (mode == LzwMode)
-			return lzw.compressFile(input, output);
-		if (mode == MulawMode)
-			return audioComp.compressFile(input, output);
-		if (mode == HuffmanMode)
-			return huffman.compressFile(input, output);
-		if (mode == SmartMode)
-			return smartCompress(input, output);
+		switch (mode)
+		{
+		case RunLengthEncoding:
+				return rle.compressFile(input, output);
+		case LempelZivWelch:
+				return lzw.compressFile(input, output);
+		case Mulaw:
+				return audioComp.compressFile(input, output);
+		case HuffmanCoding:
+				return huffman.compressFile(input, output);
+		case Smart:
+				return smartCompress(input, output);
+		}
 	}
 
 	int decompressFile(const std::string& input, const std::string& output)
 	{
-		RLE rle(static_cast<char>(1));
-		AudioCompresser audioComp(static_cast<char>(2));
-		Huffman huffman(static_cast<char>(3));
-		LZWCompressor lzw(static_cast<char>(4));
+		RLE rle(RleKey);
+		AudioCompresser audioComp(MuLawKey);
+		Huffman huffman(HuffmanKey);
+		LZWCompressor lzw(LzwKey);
 		Mode mode;
 
 		std::ifstream is(input, std::ios_base::binary);
@@ -127,23 +134,27 @@ public:
 		char data;
 		is.get(data);
 		is.close();
-		if (data == static_cast<char>(1))
-			mode = RleMode;
-		if (data == static_cast<char>(2))
-			mode = MulawMode;
-		if (data == static_cast<char>(3))
-			mode = HuffmanMode;
-		if (data == static_cast<char>(4))
-			mode = LzwMode;
 
-		if (mode == RleMode)
+		if (data == RleKey)
+			mode = RunLengthEncoding;
+		if (data == MuLawKey)
+			mode = Mulaw;
+		if (data == HuffmanKey)
+			mode = HuffmanCoding;
+		if (data == LzwKey)
+			mode = LempelZivWelch;
+
+		switch (mode)
+		{
+		case RunLengthEncoding:
 			return rle.decompressFile(input, output);
-		if (mode == LzwMode)
+		case LempelZivWelch:
 			return lzw.decompressFile(input, output);
-		if (mode == MulawMode)
+		case Mulaw:
 			return audioComp.decompressFile(input, output);
-		if (mode == HuffmanMode)
+		case HuffmanCoding:
 			return huffman.decompressFile(input, output);
+		}
 	}
 };
 
@@ -175,15 +186,15 @@ int _tmain(int argc, _TCHAR* argv[])
 	else
 	{
 		if (mode == "RLE")
-			smartCompresser.compressFile(input, output, SmartCompresser::RleMode);
+			smartCompresser.compressFile(input, output, SmartCompresser::RunLengthEncoding);
 		else if (mode == "MULAW")
-			smartCompresser.compressFile(input, output, SmartCompresser::MulawMode);
+			smartCompresser.compressFile(input, output, SmartCompresser::Mulaw);
 		else if (mode == "LZW")
-			smartCompresser.compressFile(input, output, SmartCompresser::LzwMode);
+			smartCompresser.compressFile(input, output, SmartCompresser::LempelZivWelch);
 		else if (mode == "HUFFMAN")
-			smartCompresser.compressFile(input, output, SmartCompresser::HuffmanMode);
+			smartCompresser.compressFile(input, output, SmartCompresser::HuffmanCoding);
 		else
-			smartCompresser.compressFile(input, output, SmartCompresser::SmartMode);
+			smartCompresser.compressFile(input, output, SmartCompresser::Smart);
 	}
 	std::cout << "Compression finished in ";
 	time_t te; 

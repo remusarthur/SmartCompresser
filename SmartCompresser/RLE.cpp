@@ -11,7 +11,6 @@ public:
 
 	int compressFile(const std::string& inputPath, const std::string& outputPath)
 	{
-		
 		char currentChar;
 		char lastChar;
 		unsigned char frequency = 1;
@@ -92,6 +91,6 @@ public:
 		return EXIT_SUCCESS;
 	}
 
-	RLE(char key) : BaseCompression(key)
+	RLE(BaseCompression::PrivateKeyType key) : BaseCompression(key)
 	{};
 };

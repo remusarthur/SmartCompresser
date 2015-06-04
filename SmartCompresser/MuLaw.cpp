@@ -100,7 +100,7 @@ public:
 		return EXIT_SUCCESS;
 	}
 
-	AudioCompresser(char key) :BaseCompression(key)
+	AudioCompresser(BaseCompression::PrivateKeyType key) :BaseCompression(key)
 	{
 		
 	}

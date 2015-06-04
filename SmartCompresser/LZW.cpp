@@ -254,6 +254,6 @@ public:
 		return doFileAction(Mode::Decompress, inputPath, outputPath);
 	}
 
-	LZWCompressor(char key) :BaseCompression(key)
+	LZWCompressor(BaseCompression::PrivateKeyType key) :BaseCompression(key)
 	{};
 };
