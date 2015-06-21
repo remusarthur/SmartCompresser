@@ -13,7 +13,7 @@
 
 class SmartCompresser
 {
-	size_t MIN_SIZE = 1024 * 16;
+	size_t MIN_SIZE = 1024 * 160;
 	std::string tempFileName = "file.tmp";
 	std::string compressedtempFileName = "fileCompressed.tmp";
 
@@ -51,7 +51,7 @@ class SmartCompresser
 		}
 		os.close();
 
-		size_t minSize = nbytes;
+		size_t minSize = (1<<31);
 		Mode mode;
 
 		auto isMin = [&]()
@@ -63,7 +63,7 @@ class SmartCompresser
 			is.seekg(0, std::ios::end);
 			fsize = is.tellg() - fsize;
 
-			if (fsize < minSize)
+			if (fsize <= minSize)
 			{
 				minSize = fsize;
 				return true;
